@@ -4,7 +4,7 @@ import { SCREEN_MAP, hex } from './screens.js';
 import { NUM_TRACKS } from './state.js';
 
 export const COLS = 42;
-export const ROWS = 23;
+export const ROWS = 21;
 const SIDEBAR_X = 33;
 
 function makeBuffer() {

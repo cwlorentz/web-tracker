@@ -15,12 +15,29 @@ app.onChange(() => {
 
 // Scale the character grid so all of it fits the LCD at any window size.
 const lcd = screenEl.parentElement;
+const MAX_FONT = 16;
 function fitScreen() {
-  const { width, height } = lcd.getBoundingClientRect();
-  const size = Math.min((width - 16) / (COLS * 0.6), (height - 12) / (ROWS * 1.3));
-  screenEl.style.fontSize = `${Math.floor(size * 10) / 10}px`;
+  // Fill the width first, then shrink if the page would need scrolling.
+  const style = getComputedStyle(lcd);
+  const innerW = lcd.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  let size = Math.min(MAX_FONT, innerW / (COLS * 0.602));
+  screenEl.style.fontSize = `${size}px`;
+  const overflow = document.documentElement.scrollHeight - window.innerHeight;
+  if (overflow > 0) {
+    const h = screenEl.offsetHeight;
+    size = Math.max(4, size * Math.max(0.2, (h - overflow - 2) / h));
+    screenEl.style.fontSize = `${size}px`;
+  }
 }
-new ResizeObserver(fitScreen).observe(lcd);
+let fitQueued = false;
+const queueFit = () => {
+  if (fitQueued) return;
+  fitQueued = true;
+  requestAnimationFrame(() => { fitQueued = false; fitScreen(); });
+};
+window.addEventListener('resize', queueFit);
+window.addEventListener('orientationchange', queueFit);
+document.fonts?.ready.then(queueFit);
 fitScreen();
 
 bindKeyboard(app);

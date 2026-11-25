@@ -35,6 +35,7 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 16px;
   gap: 16px;
   -webkit-user-select: none;
@@ -58,14 +59,14 @@ body {
 
 .lcd {
   background: var(--lcd);
-  aspect-ratio: 4 / 3;
+  padding: 6px 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 
-/* The LCD: 40 x 23 character cells, scaled to fit the device. */
+/* The LCD: 42 x 21 character cells, scaled to fit the device. */
 .screen {
   margin: 0;
   background: var(--lcd);
@@ -168,4 +169,44 @@ kbd {
   color: var(--text);
   font: inherit;
   line-height: 1.5;
+}
+
+/* ---- Phones ---- */
+
+/* Touch screens have no keyboard, so hide the keyboard hint. */
+@media (pointer: coarse) {
+  .keys { display: none; }
+}
+
+@media (max-width: 520px) {
+  body { padding: 8px; justify-content: flex-start; }
+  .device { padding: 12px 12px 20px; border-radius: 14px; }
+  .bezel { padding: 6px; border-radius: 4px; }
+  .controls { margin-top: 20px; padding: 0; }
+  .dpad, .updown, .actions { gap: 6px; }
+  .key { width: clamp(44px, 15vw, 64px); height: clamp(44px, 15vw, 64px); }
+}
+
+/* Phone on its side: screen on the left, buttons on the right. */
+@media (orientation: landscape) and (max-height: 520px) {
+  body { padding: 6px; justify-content: center; }
+  .device {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+  .bezel { flex: 1; min-width: 0; padding: 6px; }
+  .controls {
+    flex-direction: column;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+  }
+  .dpad, .updown, .actions { gap: 6px; }
+  .key { width: clamp(40px, 11vh, 56px); height: clamp(40px, 11vh, 56px); }
+  .key.action span { font-size: 8px; letter-spacing: 0.02em; }
 }
