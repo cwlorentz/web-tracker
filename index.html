@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Pocket Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="device" class="device" aria-label="Tracker">
+    <div class="bezel">
+      <div class="lcd"><pre id="screen" class="screen" aria-live="off"></pre></div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <button class="key" data-btn="left" aria-label="Left">&#9664;</button>
+        <div class="updown">
+          <button class="key" data-btn="up" aria-label="Up">&#9650;</button>
+          <button class="key" data-btn="down" aria-label="Down">&#9660;</button>
+        </div>
+        <button class="key" data-btn="right" aria-label="Right">&#9654;</button>
+      </div>
+      <div class="actions">
+        <button class="key action" data-btn="option"><span>OPTION</span></button>
+        <button class="key action" data-btn="edit"><span>EDIT</span></button>
+        <button class="key action" data-btn="shift"><span>SHIFT</span></button>
+        <button class="key action" data-btn="play"><span>PLAY</span></button>
+      </div>
+    </div>
+  </main>
+
+  <p class="keys">
+    Keyboard: <kbd>&larr;</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd> move ·
+    <kbd>Shift</kbd> shift · <kbd>Space</kbd> play · <kbd>Z</kbd> option · <kbd>X</kbd> edit
+  </p>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
