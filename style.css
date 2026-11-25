@@ -94,6 +94,7 @@ body {
 .screen .map { color: var(--dim); }
 .screen .map-on { background: var(--accent); color: var(--cursor-fg); }
 .screen .msg { color: var(--msg); }
+.screen .action { color: var(--accent); }
 
 .controls {
   display: flex;

@@ -21,6 +21,7 @@ export function bindKeyboard(app) {
     e.preventDefault();
     // Holding an arrow repeats it; holding a modifier does not.
     if (e.repeat && !DIRECTIONS.has(btn)) return;
+    app.lastPressWasTouch = false;
     app.press(btn);
   });
   window.addEventListener('keyup', (e) => {
@@ -44,6 +45,7 @@ export function bindButtons(app, root) {
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       el.setPointerCapture(e.pointerId);
+      app.lastPressWasTouch = e.pointerType !== 'mouse';
       app.press(btn);
       if (DIRECTIONS.has(btn)) {
         repeatTimer = setTimeout(() => {

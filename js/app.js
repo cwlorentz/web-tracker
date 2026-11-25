@@ -2,31 +2,48 @@
 
 import { createProject, NUM_TRACKS, SONG_ROWS, STEPS } from './state.js';
 import { buildScreens, SCREEN_MAP } from './screens.js';
+import { createEngine } from './audio.js';
+import { loadSaved, saveLocal } from './storage.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export function createApp() {
   const app = {
-    project: createProject(),
+    project: loadSaved() ?? createProject(),
     ctx: { chain: 0, phrase: 0, instrument: 0, table: 0 },
     last: { chain: 0, phrase: 0, note: 48, vol: 0x80, inst: 0, fx: 0, fxVal: 0 },
     held: { up: false, down: false, left: false, right: false, shift: false, play: false, option: false, edit: false },
     screenId: 'song',
     message: '',
     playing: null, // { mode, pos: [track positions] }
-    engine: null, // sound engine hooks in here (step 3)
+    engine: createEngine(),
     listeners: [],
   };
   app.screens = buildScreens(app);
 
   const screen = () => app.screens[app.screenId];
   const changed = () => app.listeners.forEach((fn) => fn());
+
+  // Save to this browser shortly after any edit.
+  let saveTimer;
+  const edited = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveLocal(app.project), 600);
+  };
+  app.edited = edited;
   let msgTimer;
   const say = (text) => {
     app.message = text;
     clearTimeout(msgTimer);
     msgTimer = setTimeout(() => { app.message = ''; changed(); }, 1800);
   };
+
+  // Hear the note under the cursor while editing a phrase.
+  function audition() {
+    if (app.playing || app.screenId !== 'phrase') return;
+    const step = app.project.phrases[app.ctx.phrase][screen().cursor.row];
+    app.engine.preview(app.screens.song.cursor.col, step, app.project);
+  }
 
   app.currentCell = () => {
     const s = screen();
@@ -87,13 +104,16 @@ export function createApp() {
   }
 
   function insert(spec) {
+    if (spec.action) return spec.action();
     if (spec.readOnly || !spec.set) return;
     if (spec.get() == null) {
       const v = spec.def ? spec.def() : spec.min;
       spec.set(v ?? spec.min);
       spec.onInsert?.();
+      edited();
     }
     remember(spec, spec.get());
+    audition();
   }
 
   function adjust(spec, delta) {
@@ -101,13 +121,17 @@ export function createApp() {
     const cur = spec.get();
     if (cur == null) return insert(spec);
     const v = clamp(cur + delta, spec.min, spec.max);
+    if (v === cur) return;
     spec.set(v);
     remember(spec, v);
+    edited();
+    audition();
   }
 
   function clearCell(spec) {
     if (spec.readOnly || !spec.set || spec.nullable === false) return;
     if (spec.clear) spec.clear(); else spec.set(null);
+    edited();
   }
 
   // Option + direction flips through chains / phrases / instruments / tables.
@@ -122,6 +146,7 @@ export function createApp() {
   const DIRS = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] };
 
   app.press = (btn) => {
+    app.engine.unlock();
     app.held[btn] = true;
     const h = app.held;
     if (DIRS[btn]) {
@@ -204,13 +229,19 @@ export function createApp() {
     return startSongTrack(t, row);
   }
 
-  function triggerStep() {
+  function triggerStep(when) {
     const pos = app.playing.pos;
     for (let t = 0; t < NUM_TRACKS; t++) {
       const tp = pos[t];
       if (!tp) continue;
-      const step = app.project.phrases[tp.phrase][tp.phraseStep];
-      app.engine?.trigger(t, step, app.project);
+      const p = app.project;
+      const step = p.phrases[tp.phrase][tp.phraseStep];
+      let transpose = p.transpose - 0x80;
+      if (tp.chain != null) {
+        const tsp = p.chains[tp.chain][tp.chainStep].transpose;
+        transpose += tsp >= 0x80 ? tsp - 0x100 : tsp;
+      }
+      app.engine.trigger(t, step, p, transpose, when);
     }
   }
 
@@ -226,7 +257,9 @@ export function createApp() {
 
   function tick() {
     if (!app.playing) return;
-    triggerStep();
+    // Schedule the sound slightly ahead so timer jitter is not audible.
+    const late = performance.now() - nextTime;
+    triggerStep(app.engine.now() + Math.max(0.005, 0.05 - late / 1000));
     changed();
     const pos = app.playing.pos;
     for (let t = 0; t < NUM_TRACKS; t++) {
@@ -240,7 +273,7 @@ export function createApp() {
     if (app.playing) {
       clearTimeout(timer);
       app.playing = null;
-      app.engine?.stopAll();
+      app.engine.stopAll();
       return;
     }
     const s = screen();
@@ -259,11 +292,21 @@ export function createApp() {
       for (let t = 0; t < NUM_TRACKS; t++) pos[t] = startSongTrack(t, row);
     }
     if (pos.every((x) => !x)) return say('NOTHING TO PLAY');
-    app.engine?.start?.();
     app.playing = { mode, pos };
     grooveIndex = 0;
     nextTime = performance.now();
     tick();
+  };
+
+  app.say = (text) => { say(text); changed(); };
+  app.changed = changed;
+  app.replaceProject = (project) => {
+    if (app.playing) app.togglePlay();
+    app.project = project;
+    app.ctx = { chain: 0, phrase: 0, instrument: 0, table: 0 };
+    for (const s of Object.values(app.screens)) s.cursor = { row: 0, col: 0, scroll: 0 };
+    saveLocal(project);
+    changed();
   };
 
   app.onChange = (fn) => app.listeners.push(fn);

@@ -4,8 +4,10 @@
 import {
   NUM_TRACKS, SONG_ROWS, STEPS, NUM_CHAINS, NUM_PHRASES,
   NUM_INSTRUMENTS, NUM_TABLES, FX_COMMANDS, INSTRUMENT_TYPES,
-  WAVE_SHAPES, FILTER_TYPES,
+  FILTER_TYPES, SHAPE_OPTIONS, SHAPE_LABELS, createProject,
 } from './state.js';
+import { exportFile, importFile } from './storage.js';
+import { createDemo } from './demo.js';
 
 export const hex = (v, w = 2) =>
   v == null ? '-'.repeat(w) : v.toString(16).toUpperCase().padStart(w, '0');
@@ -146,9 +148,21 @@ export function buildScreens(app) {
     id: 'instrument', letter: 'I',
     title: () => `INST. ${hex(app.ctx.instrument)}`,
     form: [
-      num('type', 'TYPE', { max: INSTRUMENT_TYPES.length - 1, big: 1, fmt: (v) => INSTRUMENT_TYPES[v] }),
+      {
+        label: 'TYPE', get: () => inst().type, min: 0, max: INSTRUMENT_TYPES.length - 1, big: 1,
+        nullable: false, fmt: (v) => INSTRUMENT_TYPES[v],
+        set: (v) => { inst().type = v; inst().shape = 0; },
+      },
       { label: 'NAME', get: () => inst().name, fmt: (v) => v, readOnly: true },
-      num('shape', 'SHAPE', { max: WAVE_SHAPES.length - 1, big: 1, fmt: (v) => WAVE_SHAPES[v] }),
+      {
+        // Its meaning (and label) depends on the instrument type.
+        get label() { return SHAPE_LABELS[inst().type]; },
+        get max() { return SHAPE_OPTIONS[inst().type].length - 1; },
+        get: () => inst().shape,
+        set: (v) => { inst().shape = v; },
+        min: 0, big: 1, nullable: false,
+        fmt: (v) => SHAPE_OPTIONS[inst().type][v] ?? '--',
+      },
       num('transpose', 'TRANSP.', { big: 12, fmt: signed80 }),
       num('volume', 'VOLUME'),
       num('attack', 'ATTACK'),
@@ -208,6 +222,11 @@ export function buildScreens(app) {
     ],
   };
 
+  // A row on the Project screen that does something when you press Edit.
+  const action = (text, run) => ({
+    label: '', get: () => text, fmt: (v) => `[${v}]`, action: run, isAction: true,
+  });
+
   const project = {
     id: 'project', letter: 'J',
     title: () => 'PROJECT',
@@ -221,6 +240,25 @@ export function buildScreens(app) {
         label: 'TRANSPOSE', get: () => p().transpose, set: (v) => { p().transpose = v; },
         min: 0, max: 0xff, big: 12, nullable: false, fmt: signed80,
       },
+      { label: '', get: () => '', fmt: () => '', readOnly: true },
+      action('SAVE TO FILE', () => { exportFile(p()); app.say('SAVED TO FILE'); }),
+      action('LOAD FROM FILE', () => {
+        importFile(app.lastPressWasTouch)
+          .then((proj) => { app.replaceProject(proj); app.say('LOADED'); })
+          .catch(() => app.say('NOT A PROJECT FILE'));
+      }),
+      action('LOAD DEMO SONG', () => {
+        if (confirm('Load the demo song? Your current project will be replaced. Save it to a file first if you want to keep it.')) {
+          app.replaceProject(createDemo());
+          app.say('DEMO LOADED - GO TO SONG, PRESS PLAY');
+        }
+      }),
+      action('NEW PROJECT', () => {
+        if (confirm('Start a new empty project? Your current project will be replaced.')) {
+          app.replaceProject(createProject());
+          app.say('NEW PROJECT');
+        }
+      }),
     ],
   };
 
@@ -246,6 +284,7 @@ export function buildScreens(app) {
       s.rowCount = s.form.length;
       s.visible = s.form.length;
       s.labelWidth = Math.max(...s.form.map((f) => f.label.length)) + 1;
+      if (s.id === 'project') s.labelWidth = 10;
       s.columns = [{ label: '', w: 14, gap: 0, cell: (r) => s.form[r] }];
     }
     s.cursor = { row: 0, col: 0, scroll: 0 };

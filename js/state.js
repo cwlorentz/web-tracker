@@ -17,6 +17,12 @@ export const FX_COMMANDS = [
 
 export const INSTRUMENT_TYPES = ['WAVSYNTH', 'SAMPLER', 'FMSYNTH', 'NONE'];
 export const WAVE_SHAPES = ['PULSE', 'SAW', 'TRI', 'SINE', 'NOISE'];
+export const SAMPLES = ['KICK', 'SNARE', 'HAT', 'OPENHAT', 'CLAP', 'TOM', 'RIM', 'COWBELL'];
+export const FM_PRESETS = ['BELL', 'BASS', 'EPIANO', 'METAL'];
+
+// What the SHAPE row means depends on the instrument type.
+export const SHAPE_OPTIONS = [WAVE_SHAPES, SAMPLES, FM_PRESETS, ['--']];
+export const SHAPE_LABELS = ['SHAPE', 'SAMPLE', 'PRESET', 'SHAPE'];
 export const FILTER_TYPES = ['OFF', 'LOWPASS', 'HIGHPASS', 'BANDPASS'];
 
 const range = (n, fn) => Array.from({ length: n }, (_, i) => fn(i));
@@ -35,9 +41,9 @@ export function emptyInstrument(i) {
     transpose: 0x80, // 80 = no transpose (signed around 80)
     volume: 0xff,
     attack: 0x00,
-    decay: 0x40,
-    sustain: 0x80,
-    release: 0x40,
+    decay: 0x60,
+    sustain: 0x00,
+    release: 0x30,
     filter: 0,
     cutoff: 0xff,
     resonance: 0x00,
@@ -46,6 +52,19 @@ export function emptyInstrument(i) {
     delay: 0x00,
     reverb: 0x00,
   };
+}
+
+// A few ready-to-use instruments so a new project makes sound straight away.
+function starterInstruments() {
+  const list = range(NUM_INSTRUMENTS, emptyInstrument);
+  const set = (i, props) => Object.assign(list[i], props);
+  set(0, { name: 'SYNTH', type: 0, shape: 0, cutoff: 0xc0, decay: 0x70 });
+  set(1, { name: 'KICK', type: 1, shape: 0, decay: 0xff, sustain: 0xff, release: 0x10 });
+  set(2, { name: 'SNARE', type: 1, shape: 1, decay: 0xff, sustain: 0xff, release: 0x10 });
+  set(3, { name: 'HAT', type: 1, shape: 2, decay: 0xff, sustain: 0xff, release: 0x10, volume: 0xb0 });
+  set(4, { name: 'BASS', type: 0, shape: 1, filter: 1, cutoff: 0x80, resonance: 0x50, decay: 0x60, sustain: 0x40 });
+  set(5, { name: 'BELL', type: 2, shape: 0, decay: 0xa0, delay: 0x60, reverb: 0x50 });
+  return list;
 }
 
 export function createProject() {
@@ -59,7 +78,7 @@ export function createProject() {
       range(STEPS, () => ({ phrase: null, transpose: 0x00 })),
     ),
     phrases: range(NUM_PHRASES, () => range(STEPS, emptyPhraseStep)),
-    instruments: range(NUM_INSTRUMENTS, emptyInstrument),
+    instruments: starterInstruments(),
     tables: range(NUM_TABLES, () =>
       range(STEPS, () => ({ transpose: null, vol: null, fx: emptyFx() })),
     ),

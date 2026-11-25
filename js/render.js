@@ -84,7 +84,7 @@ function drawGrid(buf, app, s) {
       const v = spec.get();
       const shown = String(spec.fmt(v));
       const text = s.form ? shown : shown.padEnd(col.w).slice(0, col.w);
-      let cls = v == null ? 'empty' : 'val';
+      let cls = spec.isAction ? 'action' : v == null ? 'empty' : 'val';
       if (marks.has(`${r}:${ci}`) || rowPlaying) cls += ' playing';
       if (r === cr && ci === cc) cls = app.held.edit ? 'cur editing' : 'cur';
       write(buf, x, y, text, cls);

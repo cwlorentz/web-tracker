@@ -40,6 +40,12 @@ window.addEventListener('orientationchange', queueFit);
 document.fonts?.ready.then(queueFit);
 fitScreen();
 
+// Browsers only allow sound after the user interacts. Touch screens count
+// the moment a finger lifts, so listen for every kind of interaction.
+for (const type of ['pointerup', 'touchend', 'keydown', 'click']) {
+  window.addEventListener(type, () => app.engine.unlock(), { capture: true, passive: true });
+}
+
 bindKeyboard(app);
 bindButtons(app, device);
 render(screenEl, app);

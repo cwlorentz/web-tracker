@@ -23,5 +23,15 @@ Phrase, Instrument and Table screens driven by eight buttons.
 - **Option + arrows** flip to the next/previous chain, phrase, instrument or table.
 - **Play** starts and stops.
 
+## Sound and saving
+
+- Six starter instruments: 00 synth, 01 kick, 02 snare, 03 hat, 04 bass, 05 bell.
+- Instrument types: WAVSYNTH (pulse, saw, triangle, sine, noise), SAMPLER
+  (built-in drum kit), FMSYNTH (bell, bass, e-piano, metal).
+- Your project saves in the browser automatically. The Project screen
+  (Shift + Up from Song) can save to a file, load a file, load a demo song or
+  start a new project.
+- Working FX so far: KIL (stop the note) and VOL (set volume).
+
 No build step: it is plain HTML, CSS and JavaScript. To run locally, serve the
 folder with any static server, e.g. `python3 -m http.server`.
